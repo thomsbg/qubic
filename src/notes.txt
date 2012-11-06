@@ -1,0 +1,14 @@
+Need a system that allows events to be raised and handled:
+A player raises an event that contains a square to select, the controller responds and tells the model to select that square. Then, the controller signals the other player that they may now be allowed to move, and wait on a new event to be raised.
+
+Issues to handle:
+Multiple views
+Locking states in between turns (while computer is thinking)
+
+Preferences:
+Colors
+AI difficulties
+Choose views?
+Save/Load
+
+Save/Load via applet -> AJAX?
