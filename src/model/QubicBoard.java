@@ -18,28 +18,23 @@ import view.BoardListener;
  * Also, a list of BoardListeners is included so when listeners are added,
  * they can be updated by the QubicBoard. 
  * @author John Thomson
- *
  */
 public class QubicBoard implements Cloneable, Serializable {
 	private ArrayList<Row> rows;
 	private ArrayList<Square> squares;
-	private ArrayList<BoardListener> listeners;
+	private transient ArrayList<BoardListener> listeners;
 	private Stack<Square> undoStack;
+	private Stack<Square> redoStack;
 	private boolean gameOver;
 	private boolean catsGame;
 	public Player currentPlayer;
-	private Player firstPlayer;
 	private static final long serialVersionUID = 1;
 	
 	/**
-	 * An enumerator for who's turn it is, HUMAN, or COMPUTER. 
+	 * An enumerator for who's turn it is, FIRST or SECOND. 
 	 * @author John Thomson
-	 *
 	 */
-	public enum Player {
-		HUMAN, COMPUTER;
-		//public Object clone() { return super.clone();}
-	};	
+	public enum Player {FIRST, SECOND};
 	
 	/**
 	 * Constructs a new QubicBoard with the specified arguments.
@@ -47,19 +42,17 @@ public class QubicBoard implements Cloneable, Serializable {
 	 * @param allRows Scanner input to the dat file containing the rows information
 	 * @param allSquares Scanner input to the dat file containing the rows information
 	 */
-	public QubicBoard(Player initialPlayer, Scanner allRows, Scanner allSquares) {
-		currentPlayer = initialPlayer;
-		firstPlayer = initialPlayer;
+	public QubicBoard(Scanner allRows, Scanner allSquares) {
+		currentPlayer = Player.FIRST;
 		rows = new ArrayList<Row>();
 		squares = new ArrayList<Square>();
 		listeners = new ArrayList<BoardListener>();
 		undoStack = new Stack<Square>();
+		redoStack = new Stack<Square>();
 		gameOver = false;
 		catsGame = false;
 		// This is just reading the rows file and converting it into
 		// a set of integers that can be used to build the set of rows.
-		//TODO: Remove the need for clipping, it is unnecessary and could
-		//      be decrimental to our grade.
 		while (allRows.hasNextLine()) {
 			String line = allRows.nextLine();
 			String[] values = line.split("[ \t]+");
@@ -102,9 +95,9 @@ public class QubicBoard implements Cloneable, Serializable {
 				s.addRow(rows.get(rowIndex));
 			}
 			squares.add(s);
-			//System.out.println(s.diagnostic());
 		}
 	}
+
 	/**
 	 * Returns an unmodifiable version of the squares list.
 	 * @return the list of squares, unmodifiable
@@ -113,6 +106,11 @@ public class QubicBoard implements Cloneable, Serializable {
 		return Collections.unmodifiableList(squares);
 	}
 	
+	/**
+	 * Returns an unmodifiable list of all of the Rows in
+	 * the board.
+	 * @return rows, unmodifiable
+	 */
 	public List<Row> getRows() {
 		return Collections.unmodifiableList(rows);
 	}
@@ -125,12 +123,12 @@ public class QubicBoard implements Cloneable, Serializable {
 		return currentPlayer;
 	}
 	
-	public Player getFirstPlayer() {
-		return firstPlayer;
-	}
-	
-	public void setFirstPlayer(Player p) {
-		firstPlayer = p;
+	/**
+	 * Returns the last move that was made.
+	 * @return lastMove
+	 */
+	public Square getLastMove() {
+		return undoStack.peek();
 	}
 	
 	/**
@@ -154,6 +152,7 @@ public class QubicBoard implements Cloneable, Serializable {
 		changePlayer();
 		stateChanged();
 		undoStack.push(s);
+		redoStack.clear();
 		return true;
 	}
 	
@@ -207,10 +206,10 @@ public class QubicBoard implements Cloneable, Serializable {
 	 *
 	 */
 	private void changePlayer() {
-		if (currentPlayer == Player.HUMAN)
-			currentPlayer = Player.COMPUTER;
+		if (currentPlayer == Player.SECOND)
+			currentPlayer = Player.FIRST;
 		else
-			currentPlayer = Player.HUMAN;
+			currentPlayer = Player.SECOND;
 	}
 	
 	/**
@@ -224,9 +223,9 @@ public class QubicBoard implements Cloneable, Serializable {
 				for (int k = 1; k <= 4; k++) {
 					Square sqr = new Square(i, k, j);
 					Square s = squares.get(squares.indexOf(sqr));
-					if (s.getState() == Player.HUMAN)
+					if (s.getState() == Player.SECOND)
 						output += "O ";
-					else if (s.getState() == Player.COMPUTER)
+					else if (s.getState() == Player.FIRST)
 						output += "X ";
 					else
 						output += "_ ";
@@ -251,9 +250,10 @@ public class QubicBoard implements Cloneable, Serializable {
 			s.clear();
 		gameOver = false;
 		undoStack = new Stack<Square>();
-		currentPlayer = firstPlayer;
+		currentPlayer = Player.FIRST;
 		stateChanged();
 	}
+	
 	/**
 	 * Undoes the last move, setting it to the exact state before that
 	 * move was made.
@@ -263,7 +263,7 @@ public class QubicBoard implements Cloneable, Serializable {
 		if (undoStack.empty())
 			return null;
 		Square undo = undoStack.pop();
-		
+		redoStack.push(undo);
 		int index = squares.indexOf(undo);
 		if (index == -1)
 			throw new RuntimeException("Undo Stack is corrupted, Square not found!");
@@ -276,43 +276,66 @@ public class QubicBoard implements Cloneable, Serializable {
 	}
 	
 	/**
+	 * Redoes the most recently undone move, setting the board to the
+	 * exact state after that move was made.
+	 * @return move - The move that was redone.
+	 */
+	public Square redo() {
+		if (redoStack.isEmpty()) 
+			return null;
+		
+		Square s = redoStack.pop();
+		undoStack.push(s);
+		int index = squares.indexOf(s);
+		if (index == -1)
+			throw new RuntimeException("Redo Stack is corrupted, Square not found!");
+		squares.get(index).setState(currentPlayer);
+		changePlayer();
+		stateChanged();
+		return s;
+	}
+	
+	
+	/**
 	 * Returns if an undo is possible.
 	 * @return undoable
 	 */
 	public boolean canUndo() {
-		return !undoStack.empty();
+		return !undoStack.isEmpty();
 	}
 	
-	public Object clone() {
-		QubicBoard clone;
-		try {
-			clone = (QubicBoard) super.clone();
-			clone.listeners = (ArrayList<BoardListener>) listeners.clone();
-			clone.rows = (ArrayList<Row>) rows.clone();
-            clone.squares = (ArrayList<Square>) squares.clone();
-            //for (int i = 0; i < squares.size(); i++)
-            //    clone.squares.set(i, (Square)clone.squares.get(i).clone());
-			//clone.undoStack = (Stack<Square>) undoStack.clone();
-			//clone.currentPlayer = (Player) currentPlayer.
-		} catch (Exception e) {
-			throw new RuntimeException(e);
-		}
-		return clone;
+	/**
+	 * Returns if a redo is possible.
+	 * @return redoable
+	 */
+	public boolean canRedo() {
+		return !redoStack.isEmpty();
 	}
 	
+	/**
+	 * Returns if the board is a cat's game state.
+	 * @return catsGame
+	 */
 	public boolean catsGame() {
 		return catsGame;
 	}
 	
+	/**
+	 * Returns if the board is in gameOver state.
+	 * @return gameOver
+	 */
 	public boolean gameOver() {
 		return gameOver;
 	}
 	
+	/**
+	 * Private function used for serialization.
+	 * @param in
+	 * @throws ClassNotFoundException
+	 * @throws IOException
+	 */
 	private void readObject(ObjectInputStream in) throws ClassNotFoundException, IOException {
 		in.defaultReadObject();
 		listeners = new ArrayList<BoardListener>();
 	}
 }
-
-
-

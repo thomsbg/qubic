@@ -13,6 +13,14 @@ import model.QubicBoard.Player;
 import model.Row.RowState;
 
 
+/**
+ * This was my failed attempt to "Solve" qubic.  I was hoping to be able
+ * to test every move in the game, and eventually find an unbeatable strategy,
+ * but I was unable to find such a strategy and would not have found one
+ * for probably about 1000 years.
+ * @author John Thomson
+ *
+ */
 public class PerfectAI implements QubicAI {
 	private ComputerMove computerGoesFirst;
 	private PlayerMove playerGoesFirst;

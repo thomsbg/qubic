@@ -11,9 +11,8 @@ import javax.swing.JOptionPane;
 import model.QubicBoard;
 
 /**
- * A controller to construct and implement some specific actions for the
- * window's menu and submenus.
- * @author Blake
+ * A controller to construct and implement some specific actions for the window's menu bar.
+ * @author Blake Thomson
  */
 class MenuController extends ActionController {
 	private JMenuBar menuBar;
@@ -38,7 +37,7 @@ class MenuController extends ActionController {
 		JMenu editMenu = new JMenu("Edit");
 		menuBar.add(editMenu);
 		editMenu.add(getUndoAction());
-		//editMenu.add(getRedoAction());
+		editMenu.add(getRedoAction());
 		editMenu.add(getOptionsAction());
 		
 		JMenu helpMenu = new JMenu("Help");		
@@ -49,8 +48,7 @@ class MenuController extends ActionController {
 	/**
 	 * A helper method used by the constructor that creates a menu item
 	 * with a listener attatched that pops up a little about dialog.
-	 * TODO: Make prettier.
-	 * @return The created menu item.
+	 * @return A JMenuItem, that when clicked displays an about dialog.
 	 */
 	private JMenuItem makeAboutDialog() {
 		JMenuItem item = new JMenuItem("About");

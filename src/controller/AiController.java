@@ -1,72 +1,93 @@
 package controller;
 
 import model.QubicBoard;
+import ai.DefensiveAI;
 import ai.EasyAI;
 import ai.ExpertAI;
 import ai.HardAI;
 import ai.QubicAI;
-import ai.SimpleAI;
 
 /**
- * A controller that houses the different AI's that can be used, and has
- * getter and setter methods to select which one to use.
- * @author Blake
+ * A controller storing all the AIs used in the game. It has the getters
+ * and setters necessary to allow the other controllers to communicate with it.
+ * @author Blake Thomson
  */
-class AiController extends SimpleController {
-	private QubicAI simpleAi;
-	private QubicAI easyAi;
-	private QubicAI hardAi;
-	private QubicAI expertAi;
+class AIController extends SimpleController {
+	private QubicAI firstPlayer;
+	private QubicAI secondPlayer;
 	
-	private QubicAI currentAi;
+	private QubicAI defensiveAI;
+	private QubicAI easyAI;
+	private QubicAI hardAI;
+	private QubicAI expertAI;
 	
-	/**
-	 * Constructs each AI giving each the board as a parameter, so it knows where
-	 * and who it is playing. Assigns a pointer called currentAi to hardAi as a default.
-	 * The GameController only asks for the currentAi when playing the game. The currentAi
-	 * pointer is changed by calling the setCurrentAi method with a reference to which one
-	 * of the AIs to use.
-	 * @param b
-	 */
-	AiController(QubicBoard b) {
+	AIController(QubicBoard b) {
 		super(b);
-		simpleAi = new SimpleAI(getBoard());
-		easyAi = new EasyAI(getBoard());
-		hardAi = new HardAI(getBoard());
-		expertAi = new ExpertAI(getBoard());
-		
-		currentAi = hardAi;
-	}
-
-	QubicAI getEasyAi() {
-		return easyAi;
-	}
-
-	QubicAI getHardAi() {
-		return hardAi;
-	}
-
-	QubicAI getExpertAi() {
-		return expertAi;
-	}
-
-	QubicAI getSimpleAi() {
-		return simpleAi;
-	}
-	
-	QubicAI getCurrentAi() {
-		return currentAi;
-	}
-	
-	void setCurrentAi(QubicAI ai) {
-		currentAi = ai;
+		defensiveAI = new DefensiveAI(getBoard());
+		easyAI = new EasyAI(getBoard());
+		hardAI = new HardAI(getBoard());
+		expertAI = new ExpertAI(getBoard());		
+		firstPlayer = hardAI;
+		secondPlayer = null;
 	}
 	
 	/**
-	 * A helper method called by handleChangeAI to keep what the user selected
-	 * in the menu, and what shows up in the toolbar's radio buttons in sync.
-	 * It is overridden later in ToolbarController.
+	 * @return If the first player is a human, returns null. If it is an AI,
+	 * it returns a reference to that AI.
 	 */
-	void updateSelectedAiRadioButton() {
+	QubicAI getFirstPlayer() {
+		return firstPlayer;
+	}
+	
+	/**
+	 * @param player Sets the first player to be this AI. If passed null,
+	 * the first player is a human.
+	 */
+	void setFirstPlayer(QubicAI player) {
+		firstPlayer = player;
+	}
+	
+	/**
+	 * @return If the second player is a human, returns null. If it is an AI,
+	 * it returns a reference to that AI.
+	 */
+	QubicAI getSecondPlayer() {
+		return secondPlayer;
+	}
+	
+	/**
+	 * @param player Sets the second player to be this AI. If passed null,
+	 * the second player is a human.
+	 */
+	void setSecondPlayer(QubicAI player) {
+		secondPlayer = player;
+	}
+
+	/**
+	 * @return A reference to a DefensiveAI.
+	 */
+	QubicAI getDefensiveAI() {
+		return defensiveAI;
+	}
+	
+	/**
+	 * @return A reference to an EasyAI.
+	 */
+	QubicAI getEasyAI() {
+		return easyAI;
+	}
+
+	/**
+	 * @return A reference to a HardAI.
+	 */
+	QubicAI getHardAI() {
+		return hardAI;
+	}
+	
+	/**
+	 * @return A reference to an ExpertAI.
+	 */
+	QubicAI getExpertAI() {
+		return expertAI;
 	}
 }

@@ -21,6 +21,11 @@ public class Possibility implements Comparable{
 		seed = r.nextInt(100);
 	}
 	
+	/**
+	 * Overrides the Object.compareTo function.  If two
+	 * Possibilities are the same, it compares the seeds
+	 * to add randomness to the game.
+	 */
 	public int compareTo(Object o) {
 		Possibility other = (Possibility)o;
 		int diff = -(value - other.value);
@@ -28,6 +33,7 @@ public class Possibility implements Comparable{
 			diff = this.seed - other.seed;
 		return diff;
 	}
+	
 	
 	public String toString() {
 		return "" + s.toString() + " Priority " + value;

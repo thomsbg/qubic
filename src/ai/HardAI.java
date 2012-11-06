@@ -13,31 +13,62 @@ import model.Row.RowState;
 public class HardAI implements QubicAI {
 
 	private QubicBoard board;
-	private Player aiPlayer = Player.COMPUTER;
 	private int winlevel;
+	private RowState aiPlayer;
+	private RowState otherPlayer;
 	
 	public HardAI (QubicBoard board) {
 		this.board = board;
 	}
 	
-	public Square go() {
-		QubicBoard tBoard = (QubicBoard)board.clone();
-		List<Square> openGrid = computeOpenGrid(tBoard.getGrid());
-		Square tempMove = search(tBoard, openGrid, 0);
+	/**
+	 * Sets the state of the AI such that when it chooses its moves
+	 * it will choose them on behalf of the supplied Player.
+	 * @param aiPlayer
+	 */
+	private void setAI(Player aiPlayer) {
+		if (aiPlayer == Player.FIRST) {
+			this.aiPlayer = RowState.FIRST;
+			this.otherPlayer = RowState.SECOND;
+		} else {
+			this.aiPlayer = RowState.SECOND;
+			this.otherPlayer = RowState.FIRST;
+		}
+	}
+	
+	/**
+	 * Makes the AI tell you what it's move will be,
+	 * the controller needs to actually make the move.
+	 * The parameter aiPlayer is the Player that the ai
+	 * will be acting for.
+	 * @param aiPlayer
+	 * @return move
+	 */
+	public Square go(Player aiPlayer) {
+		setAI(aiPlayer);
+		List<Square> openGrid = computeOpenGrid(board.getGrid());
+		Square tempMove = search(board, openGrid, 0);
 		if (tempMove != null) {
-			if (winlevel > 1)
-				System.out.println("\nI will beat you in a maximum of " + winlevel + " moves!\n");
+			if (winlevel >= 1)
+				System.out.println("" + aiPlayer + " will beat you in a maximum of " + winlevel + " moves!");
 			else
 				System.out.println("\n Sorry to tell you this, but you've lost.");
 			return tempMove;
 		} else {
-			System.out.println("Hard recursion didn't work, using scoring method..");
-			PriorityQueue<Possibility> moves = computePossibilities(openGrid, aiPlayer);
-			System.out.println(moves);
+			//System.out.println("Hard recursion didn't work, using scoring method..");
+			PriorityQueue<Possibility> moves = computePossibilities(openGrid, this.aiPlayer);
 			return moves.poll().s;
 		}
 	}
 	
+	/**
+	 * Recursively searches through the future possible moves.  If the
+	 * conditions are right, it will return a move guaranteeing a win.
+	 * @param board
+	 * @param openGrid
+	 * @param level
+	 * @return
+	 */
 	private Square search(QubicBoard board, List<Square> openGrid, int level) {
 
 		PriorityQueue<Possibility> moves = computePossibilities(openGrid, aiPlayer);
@@ -45,7 +76,7 @@ public class HardAI implements QubicAI {
 		if (moves.peek().value >= 50000) 
 			return moves.poll().s;
 		else if (board.gameOver()) {
-			System.out.println("Error: endgame! \n " + board);
+			//System.out.println("Error: endgame! \n " + board);
 			return null;
 		}
 		else if (board.catsGame())
@@ -55,16 +86,9 @@ public class HardAI implements QubicAI {
 		else {
 			List<Row> rows = board.getRows();
 			for (Row r : rows) {
-				Player rowState = null;
-				if (r.getState() == RowState.COMPUTER)
-					rowState = Player.COMPUTER;
-				else if (r.getState() == RowState.HUMAN)
-					rowState = Player.HUMAN;
+
 				
-				if (r.getNumSelected() == 2 && rowState == aiPlayer) {
-					//if (level == 0) {
-						System.out.println(r);
-					//}
+				if (r.getNumSelected() == 2 && r.getState() == aiPlayer) {
 					
 					List<Square> squares = r.getUnselectedSquares();
 					for (int i = 0; i <= 1; i++) {
@@ -79,15 +103,9 @@ public class HardAI implements QubicAI {
 							sHum = squares.get(0);
 						}
 						board.select(sComp);
-						//Square opponentMove = tempMove.s.getOtherSquare();
 						// Check if the human has a trivial win...
-						
-						//if (!openGrid.remove(sComp))
-							//throw new RuntimeException("ERROR!!!"); //TODO: Remove this.
 						List<Square> openGrid2 = computeOpenGrid(board.getGrid());
-						PriorityQueue<Possibility> cMoves = computePossibilities(openGrid2, Player.HUMAN);
-						if (cMoves.peek().value >= 50000)
-							System.out.println("Human wins... \n" + board);
+						PriorityQueue<Possibility> cMoves = computePossibilities(openGrid2, otherPlayer);
 						Square nextMove = null;
 						if (!(cMoves.peek().value >= 50000)) {
 							board.select(sHum);
@@ -104,45 +122,25 @@ public class HardAI implements QubicAI {
 					}
 				}
 			}
-			/*
-			while (!moves.isEmpty()) {
-				Possibility tempMove = moves.poll();
-				if (tempMove.value >= 20) {
-					openGrid.remove(tempMove.s);
-					board.select(tempMove.s);
-					Square opponentMove = tempMove.s.getOtherSquare();
-					//if (opponentMove == null)
-						//throw new RuntimeException("AI picked the wrong row!");
-					Square nextMove = null;
-					if (opponentMove != null) { //This shouldn't be necessary...
-						openGrid.remove(opponentMove);
-						board.select(opponentMove);
-						winlevel = level + 1;
-						nextMove = search(board, openGrid, level +1);
-						openGrid.add(opponentMove);
-						board.undo();
-					}
-					openGrid.add(tempMove.s);
-					board.undo();
-					if (nextMove != null)
-						return tempMove.s;
-				}
-			}
-			*/
 			return null;
 		}
 	}
 	
-	private PriorityQueue<Possibility> computePossibilities(List<Square> openGrid, Player player) {
-		RowState thisPlayer;
+	/**
+	 * Computes a priority queue of all possible moves that can be made and
+	 * ranks them in order of value to the AI.
+	 * @param openGrid
+	 * @return possibilities
+	 */
+	private PriorityQueue<Possibility> computePossibilities(List<Square> openGrid, RowState player) {
+		RowState thisPlayer = player;
 		RowState otherPlayer;
-		if (player == Player.COMPUTER){
-			thisPlayer = RowState.COMPUTER;
-			otherPlayer = RowState.HUMAN;
-		} else {
-			thisPlayer = RowState.HUMAN;
-			otherPlayer = RowState.COMPUTER;
-		}
+		
+		if (player == RowState.FIRST)
+			otherPlayer = RowState.SECOND;
+		else
+			otherPlayer = RowState.FIRST;
+			
 		PriorityQueue<Possibility> moves = new PriorityQueue<Possibility>(); 
 		for (int i = 0; i < openGrid.size(); i++) {
 			Possibility p = new Possibility(openGrid.get(i));
@@ -171,7 +169,6 @@ public class HardAI implements QubicAI {
 					p.value += 1;
 				}
 			}
-			//System.out.println(p.s);
 			moves.add(p);
 		}
 		return moves;
@@ -192,7 +189,10 @@ public class HardAI implements QubicAI {
 		}
 		return openGrid;
 	}
-	
+
+	/**
+	 * Returns the String representation of the AI.
+	 */
 	public String toString() {
 		return "Hard";
 	}

@@ -15,7 +15,7 @@ import model.QubicBoard;
  * and provides some getters/setters for the various fields required by other
  * controllers in the inheritance chain. It also adds a window listener to the
  * frame, to implement the ask to save on close feature.
- * @author blake
+ * @author Blake Thomson
  */
 class SimpleController {
 	private JFrame frame;	
@@ -43,14 +43,14 @@ class SimpleController {
 	 * later in the ActionController class.
 	 */
 	void handleConfirmSave() {
-		Toolkit.getDefaultToolkit().beep();
+		Toolkit.getDefaultToolkit().beep(); // Why doesn't this work?
 		int result = JOptionPane.showConfirmDialog(frame,
 				"Do you want to save the current game before you leave?",
 				"Save Game?", JOptionPane.YES_NO_CANCEL_OPTION,
 				JOptionPane.WARNING_MESSAGE);
 		if (result == JOptionPane.YES_OPTION) {
-			handleSave();
-			System.exit(0);
+			if (handleSave())
+				System.exit(0);
 		} else if (result == JOptionPane.NO_OPTION)
 			System.exit(0);
 	}
@@ -59,17 +59,28 @@ class SimpleController {
 	 * Overridden in the ActionController to do the actual work of saving the
 	 * QubicBoard state to a file.
 	 */
-	void handleSave() {
+	boolean handleSave() {
+		return false;
 	}
 
+	/**
+	 * @return A reference to the QubicBoard currently being used to play the game.
+	 */
 	QubicBoard getBoard() {
 		return board;
 	}
 
+	/**
+	 * @param board A new QubicBoard to replace the existing one. It is used when opening
+	 * a game save state.
+	 */
 	void setBoard(QubicBoard board) {
 		this.board = board;
 	}
 
+	/**
+	 * @return A reference to the outtermost JFrame, which contains the entire program.
+	 */
 	JFrame getFrame() {
 		return frame;
 	}

@@ -1,6 +1,7 @@
 package model;
 
 import java.io.Serializable;
+
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -79,8 +80,8 @@ public class Square implements Serializable {
 	/**
 	 * Returns the selected state of the square.
 	 * 
-	 * @return state - Of type player, it can be either Player.HUMAN,
-	 * Player.COMPUTER or null (unselected).
+	 * @return state - Of type player, it can be either Player.SECOND,
+	 * Player.FIRST or null (unselected).
 	 */
 	public Player getState() {
 		return state;
@@ -133,9 +134,9 @@ public class Square implements Serializable {
 	public String diagnostic() {
 		String output = "";
 		String stateString = "";
-		if (this.getState() == Player.HUMAN)
+		if (this.getState() == Player.SECOND)
 			stateString = "is selected by the player";
-		else if (this.getState() == Player.COMPUTER)
+		else if (this.getState() == Player.FIRST)
 			stateString = "is selected by the computer";
 		else
 			stateString = "is not selected";

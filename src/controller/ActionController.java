@@ -1,5 +1,6 @@
 package controller;
 
+import java.awt.Color;
 import java.awt.event.ActionEvent;
 import java.io.File;
 import java.io.FileInputStream;
@@ -19,16 +20,16 @@ import model.QubicBoard;
  * A controller storing all the action objects and methods used by those
  * objects. Stub methods are overridden in subclasses, depending on where
  * they are implemented (i.e. menu, toolbar, etc.)
- * @author Blake
+ * @author Blake Thomson
  */
-class ActionController extends AiController {
+class ActionController extends ViewController {
 	private NewGameAction newGameAction;
 	private OpenAction openAction;
 	private SaveAction saveAction;	
-	private ExitAction exitAction;
 	private UndoAction undoAction;
+	private RedoAction redoAction;
 	private OptionsAction optionsAction;
-	private AIAction aiAction;
+	private ExitAction exitAction;
 	
 	private JFileChooser chooser;
 	
@@ -44,11 +45,11 @@ class ActionController extends AiController {
 		
 		newGameAction = new NewGameAction("New", new ImageIcon(getClass().getResource("/resources/new.gif")));
 		openAction = new OpenAction("Open", new ImageIcon(getClass().getResource("/resources/open.gif")));
-		saveAction = new SaveAction("Save", new ImageIcon(getClass().getResource("/resources/save.gif")));
-		exitAction = new ExitAction("Exit", new ImageIcon(getClass().getResource("/resources/stop.gif")));
+		saveAction = new SaveAction("Save", new ImageIcon(getClass().getResource("/resources/save.gif")));		
 		undoAction = new UndoAction("Undo", new ImageIcon(getClass().getResource("/resources/undo.gif")));
-		aiAction = new AIAction("Computer Difficulty", new ImageIcon(getClass().getResource("/resources/dialog.gif")));
+		redoAction = new RedoAction("Redo", new ImageIcon(getClass().getResource("/resources/redo.gif")));
 		optionsAction = new OptionsAction("Options", new ImageIcon(getClass().getResource("/resources/options.gif")));
+		exitAction = new ExitAction("Exit", new ImageIcon(getClass().getResource("/resources/stop.gif")));
 	}
 
 	/**
@@ -96,7 +97,7 @@ class ActionController extends AiController {
 		}
 		
 		public void actionPerformed(ActionEvent e) {
-			//chooser.setCurrentDirectory(new File("."));
+			chooser.setCurrentDirectory(new File("."));
 			chooser.setSelectedFile(new File("board.qbd"));
 			int result = chooser.showOpenDialog(getFrame());
 			if (result == JFileChooser.APPROVE_OPTION) {
@@ -104,24 +105,23 @@ class ActionController extends AiController {
 					File file = chooser.getSelectedFile();
 					FileInputStream fis = new FileInputStream(file.getPath());
 					ObjectInputStream input = new ObjectInputStream(fis);
+					
 					QubicBoard newBoard = (QubicBoard) input.readObject();
-					handleNewBoard(newBoard);
-					System.out.println("I opened: " + file.getPath());
+					setBoard(newBoard);
+					getBoard().addListener(getMainView());
+					getBoard().addListener(get3DView());
+					getBoard().addListener(getHistoryPanel());
+					
+					Color[] colors = (Color[]) input.readObject();
+					handleChangedColors(colors);
+					
+					String s = (String) input.readObject();
+					getHistoryPanel().setText(s);
 				} catch (Exception error) {
 					throw new RuntimeException(error.toString());
 				}
-			} else {
-				System.out.println("Not opening a file after all");
 			}
 		}
-	}
-	
-	/**
-	 * Overridden later in GameController.
-	 * @param newBoard A saved QubicBoard object that will replace the current one
-	 * when opening a new game.
-	 */
-	void handleNewBoard(QubicBoard newBoard) {
 	}
 	
 	/**
@@ -159,8 +159,8 @@ class ActionController extends AiController {
 	 * user to save the QubicBoard state to a file.
 	 */
 	@Override
-	void handleSave() {
-		//chooser.setCurrentDirectory(new File("."));
+	boolean handleSave() {
+		chooser.setCurrentDirectory(new File("."));
 		chooser.setSelectedFile(new File("board.qbd"));
 		int result = chooser.showSaveDialog(getFrame());
 		if (result == JFileChooser.APPROVE_OPTION) {
@@ -169,32 +169,17 @@ class ActionController extends AiController {
 				FileOutputStream fos = new FileOutputStream(file.getPath());
 				ObjectOutputStream output = new ObjectOutputStream(fos);
 				output.writeObject(getBoard());
-				System.out.println("I saved: " + file.getPath());
+				output.writeObject(getCurrentColors());
+				output.writeObject(getHistoryPanel().getText());
 			} catch (Exception error) {
 				throw new RuntimeException(error.toString());
 			}
 			saveAction.setEnabled(!file.exists());
 			if (!openAction.isEnabled())
 				openAction.setEnabled(file.exists());
-		} else {
-			System.out.println("Not saving a file after all");
-		}
-	}
-	
-	/**
-	 * A very simple action to exit the program.
-	 */
-	class ExitAction extends AbstractAction {
-		private static final long serialVersionUID = 1;
-		
-		public ExitAction(String name, Icon icon) {
-			super(name, icon);
-			putValue(SHORT_DESCRIPTION, "Exits the game");
-		}
-		
-		public void actionPerformed(ActionEvent e) {
-			handleConfirmSave();
-		}
+			return true;
+		} else
+			return false;
 	}
 	
 	/**
@@ -213,18 +198,19 @@ class ActionController extends AiController {
 		
 		public void actionPerformed(ActionEvent e) {
 			if (getBoard().canUndo()) {				
-				System.out.println("undoing...");
 				getBoard().undo();
-				handleUndo();
+				getHistoryPanel().removeLine();
+				redoAction.setEnabled(true);
 				if (getBoard().canUndo()) {
 					getBoard().undo();
-					handleUndo();
-				} else
+					getHistoryPanel().removeLine();
+					redoAction.setEnabled(true);
+				} else {
+					redoAction.setEnabled(false);
 					handleNewGame();
+				}
 				setEnabled(getBoard().canUndo());
 				saveAction.setEnabled(getBoard().canUndo());
-				System.out.println(getBoard());
-				System.out.println("-----------------------------------------");
 			}
 		}
 	}
@@ -236,28 +222,27 @@ class ActionController extends AiController {
 	void handleUndo() {
 	}
 	
-	/**
-	 * An action to change the computer's difficulty. Calls an external method,
-	 * handleChangeAI(), which is overridden later.
-	 */
-	class AIAction extends AbstractAction {
+	class RedoAction extends AbstractAction {
 		private static final long serialVersionUID = 1;
 		
-		public AIAction(String name, Icon icon) {
+		public RedoAction(String name, Icon icon) {
 			super(name, icon);
-			putValue(SHORT_DESCRIPTION, "Change the computer's level of difficulty");
+			putValue(SHORT_DESCRIPTION, "Redo the last move");
+			setEnabled(false);
 		}
 		
 		public void actionPerformed(ActionEvent e) {
-			handleChangeAI();
+			if (getBoard().canRedo()) {
+				getBoard().redo();
+				getHistoryPanel().writeLine();
+				if (getBoard().canRedo()) {
+					getBoard().redo();
+					getHistoryPanel().writeLine();
+				}
+				setEnabled(getBoard().canRedo());
+				saveAction.setEnabled(getBoard().canUndo());
+			}
 		}
-	}
-	
-	/**
-	 * Actually does the changing of the AI, is overridden later by introducing a dialog.
-	 * May be overridden differently, depending on what interface is used to change the AI.
-	 */
-	void handleChangeAI() {
 	}
 
 	class OptionsAction extends AbstractAction {
@@ -274,14 +259,40 @@ class ActionController extends AiController {
 		}
 	}
 	
-	AIAction getAiAction() {
-		return aiAction;
+	/**
+	 * This is overridden later (in GameController). It allows the options panel
+	 * to communicate a length of time to wait before the computer moves.
+	 * @param d
+	 */
+	void setDelay(int d) {
+	}
+	
+	/**
+	 * This is overridden later (in GameController). It allows the options panel
+	 * to ask for the current delay so it can update the number displayed in
+	 * the spinner box within the dialog.
+	 * @return
+	 */
+	int getDelay() {
+		return 0;
 	}
 
-	ExitAction getExitAction() {
-		return exitAction;
+	/**
+	 * A very simple action to exit the program.
+	 */
+	class ExitAction extends AbstractAction {
+		private static final long serialVersionUID = 1;
+		
+		public ExitAction(String name, Icon icon) {
+			super(name, icon);
+			putValue(SHORT_DESCRIPTION, "Exits the game");
+		}
+		
+		public void actionPerformed(ActionEvent e) {
+			handleConfirmSave();
+		}
 	}
-
+	
 	NewGameAction getNewGameAction() {
 		return newGameAction;
 	}
@@ -298,7 +309,15 @@ class ActionController extends AiController {
 		return undoAction;
 	}
 	
+	RedoAction getRedoAction() {
+		return redoAction;
+	}
+	
 	OptionsAction getOptionsAction() {
 		return optionsAction;
+	}
+	
+	ExitAction getExitAction() {
+		return exitAction;
 	}
 }

@@ -10,8 +10,7 @@ import model.Square;
  * Used by the View3D class to define the trapezoid shapes drawn onscreen.
  * Contains low level details about coordinates and contains methods used 
  * to help the View3D class with the getSquareAtPoint method.
- * @author blake
- *
+ * @author Blake Thomson
  */
 public class QubicPlane3D {
 	private Polygon[] boxes;
@@ -20,6 +19,12 @@ public class QubicPlane3D {
 	private int height;
 	private Point2D p1;
 	
+	/**
+	 * Creates a plane of polygons
+	 * @param p1
+	 * @param w
+	 * @param h
+	 */
 	public QubicPlane3D(Point2D p1, int w, int h) {
 		width = w;
 		height = h;
@@ -28,7 +33,17 @@ public class QubicPlane3D {
 		
 		computeBoxes();
 	}
-
+	
+	/**
+	 * Creates all of the polygons in the plane
+	 * Creats an Array of all of the polygons
+	 */
+	/**
+	 * Based on the width, height, and initial point fields, this computes various
+	 * points of interest, and from there constructs 25 Point2D objects representing
+	 * the various points where grid lines intersect on a board. With these 25 points,
+	 * 16 polygons are created representing the 16 squares in a plane of the game.
+	 */
 	public void computeBoxes() {
 		double x1 = p1.getX();
 		double x2 = p1.getX() + width * 0.25;
@@ -176,14 +191,32 @@ public class QubicPlane3D {
 		overallPlane.addPoint((int) p21.getX(), (int) p21.getY());
 	}
 	
+	/**
+	 * @return The array of polygons representing the squares of a single plane of the game.
+	 */
 	public Polygon[] getBoxes() {
 		return boxes;
 	}
 	
+	/**
+	 * @param p A point that may or not be inside the plane.
+	 * @return True is the given point is within the boundaries of the whole plane,
+	 * otherwise returns false.
+	 */
 	public boolean contains(Point2D p) {
 		return overallPlane.contains(p);
 	}
 	
+	/**
+	 * When asked by the View3D class, it returns the square at the point clicked.
+	 * This is called after contains (above), which guarantees that an appropriate
+	 * square will be found.
+	 * @param p The point of interest
+	 * @param plane The z-coordinate of the square to retu is
+	 * somewhere within the plane.rn. (This method only searches within
+	 * one plane of the game).
+	 * @return The square of interest.
+	 */
 	public Square getSquareAtPoint(Point2D p, int plane) {
 		for (int i = 0; i < boxes.length; i++) {
 			if (boxes[i].contains(p)) {
@@ -197,14 +230,41 @@ public class QubicPlane3D {
 		return new Square(-1, -1, -1);
 	}
 	
-	public void setWidth(int n) {
-		width = n;
+	/**
+	 * Used internally to determine which polygon corresponds to the given square.
+	 * This is used in the highlighting feature.
+	 * @param s
+	 * @return
+	 */
+	Polygon getPolygonAtSquare(Square s) {
+		int mod = 4 - s.getX();
+		int div = s.getY() - 1;
+		return boxes[div * 4 + mod];
 	}
 	
-	public void setHeight(int n) {
-		height = n;
+	/**
+	 * Sets the width of the bottom of one plane of the board.
+	 * Updated when the size of the containing panel changes.
+	 * @param n
+	 */
+	public void setWidth(int w) {
+		width = w;
 	}
 	
+	/**
+	 * Sets the vertical height of one plane of the board. Updated when the size
+	 * of the containing panel changes.
+	 * @param n
+	 */
+	public void setHeight(int h) {
+		height = h;
+	}
+	
+	/**
+	 * Sets the initial point from which all the points of interest (and therefore
+	 * all the polygons used to draw the boards) are based on.
+	 * @param p1
+	 */
 	public void setP1(Point2D p1) {
 		this.p1 = p1;
 	}

@@ -17,15 +17,17 @@ public class Row implements Serializable {
 	// Need to add state information
 	private ArrayList<Square> squares;
 	private ArrayList<Square> selectedSquares;
+	
 	/**
-	 * An enumerator for the Row and its possible states: OPEN, COMPUTER, HUMAN
+	 * An enumerator for the Row and its possible states: OPEN, FIRST, SECOND
 	 * and MIXED.  
 	 * @author John Thomson
 	 * @see Row#getNumSelected()
 	 */
-	public enum RowState {OPEN, COMPUTER, HUMAN, MIXED};
+	public enum RowState {OPEN, FIRST, SECOND, MIXED};
 	private RowState state;
 	private int numSelected;
+	
 	private static final long serialVersionUID = 1;
 	
 	/**
@@ -53,9 +55,9 @@ public class Row implements Serializable {
 		//output += "This is a ";
 		if (state == RowState.OPEN)
 			output += "open";
-		else if (state == RowState.COMPUTER)
+		else if (state == RowState.FIRST)
 			output += "computer" + numSelected;
-		else if (state == RowState.HUMAN)
+		else if (state == RowState.SECOND)
 			output += "human" + numSelected;
 		else
 			output += "mixed";
@@ -79,23 +81,23 @@ public class Row implements Serializable {
 	
 	/**
 	 * This is called every time the internal state of the Row is changed.
-	 * It updates the Row state information, determining if it is a computer,
-	 * human or mixed.
+	 * It updates the Row state information, determining if it is a first,
+	 * second or mixed.
 	 *
 	 */
 	private void stateChanged() {		
 		RowState tempState = RowState.OPEN;
 		for (Square s : selectedSquares) {
-			if (s.getState() == Player.COMPUTER) {
+			if (s.getState() == Player.FIRST) {
 				if (tempState == RowState.OPEN) {
-					tempState = RowState.COMPUTER;
-				} else if (tempState == RowState.HUMAN) {
+					tempState = RowState.FIRST;
+				} else if (tempState == RowState.SECOND) {
 					tempState = RowState.MIXED;
 				}
-			} else if (s.getState() == Player.HUMAN) {
+			} else if (s.getState() == Player.SECOND) {
 				if (tempState == RowState.OPEN) {
-					tempState = RowState.HUMAN;
-				} else if (tempState == RowState.COMPUTER) {
+					tempState = RowState.SECOND;
+				} else if (tempState == RowState.FIRST) {
 					tempState = RowState.MIXED;
 				}
 			}
@@ -105,7 +107,7 @@ public class Row implements Serializable {
 	
 	/**
 	 * Returns the state of the Row.  
-	 * @return state - OPEN, HUMAN, COMPUTER, MIXED
+	 * @return state - OPEN, SECOND, FIRST, MIXED
 	 */
 	public RowState getState() {
 		return state;
@@ -129,10 +131,18 @@ public class Row implements Serializable {
 		return Collections.unmodifiableList(squares);
 	}
 	
+	/**
+	 * Returns an unmodifiable list of the selected Squares.
+	 * @return selectedSquares
+	 */
 	public List<Square> getSelectedSquares() {
 		return Collections.unmodifiableList(selectedSquares);
 	}
 	
+	/**
+	 * Returns an unmodifiable list of the unselected Squares.
+	 * @return unselectedSquares
+	 */
 	public List<Square> getUnselectedSquares() {
 		List<Square> result = new ArrayList<Square>(squares); 
 		for (Square s : selectedSquares) {

@@ -11,12 +11,12 @@ import model.QubicBoard.Player;
 import model.Row.RowState;
 
 /**
- * This is the easy AI, it will work with a very basic set of instructions
- * othewise, it'll randomly choose. 
+ * This is the Defensive AI, it will block virtually every move
+ * that you make, requiring 
  * @author John Thomson
  *
  */
-public class EasyAI implements QubicAI {
+public class DefensiveAI implements QubicAI {
 	private QubicBoard board;
 	private RowState aiPlayer;
 	private RowState otherPlayer;
@@ -25,7 +25,7 @@ public class EasyAI implements QubicAI {
 	 * Constructs a new AI from the given QubicBoard.
 	 * @param board
 	 */
-	public EasyAI (QubicBoard board) {
+	public DefensiveAI(QubicBoard board) {
 		this.board = board;
 	}
 	
@@ -82,13 +82,15 @@ public class EasyAI implements QubicAI {
 						p.value += 4000;
 					}
 				} else if (r.getNumSelected() == 2) {
-					if (r.getState() == aiPlayer) {
+					if (r.getState() == otherPlayer) {
 						p.value += 10;
-					}
+					} else if (r.getState() == aiPlayer)
+						p.value += 2;
 				} else if (r.getNumSelected() == 1) {
 					if (r.getState() == aiPlayer) {
+						p.value += 1;
+					} else if (r.getState() == otherPlayer)
 						p.value += 2;
-					}
 				} else if (r.getNumSelected() == 0) {
 					p.value += 1;
 				}

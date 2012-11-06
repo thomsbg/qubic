@@ -2,20 +2,19 @@ package main;
 
 import java.util.Scanner;
 
+import javax.swing.JApplet;
+
 import model.QubicBoard;
 import controller.GameController2;
 
-public class QubicMain {
+public class QubicApplet extends JApplet {
 
-	/**
-	 * @param args
-	 */
-	public static void main(String[] args) {
+	public void init() {
 		Scanner input = new Scanner("");
 		Scanner input2 = new Scanner("");
 		try {
-			input = new Scanner(QubicMain.class.getResourceAsStream("/resources/rows.dat"));
-			input2 = new Scanner(QubicMain.class.getResourceAsStream("/resources/squares2.dat"));
+			input = new Scanner(QubicApplet.class.getResourceAsStream("/resources/rows.dat"));
+			input2 = new Scanner(QubicApplet.class.getResourceAsStream("/resources/squares2.dat"));
 		} catch (Exception e) {
 			System.out.println("File not found");
 			throw new RuntimeException(e);
