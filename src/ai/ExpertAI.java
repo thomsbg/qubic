@@ -1,9 +1,7 @@
 package ai;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.PriorityQueue;
 
 import model.QubicBoard;
@@ -16,16 +14,21 @@ import model.Row.RowState;
 public class ExpertAI implements QubicAI {
 	//private ComputerMove computerGoesFirst;
 	//private PlayerMove playerGoesFirst;
-	private final int SEARCH_WIDTH_LIMIT = 15;
+	private double maxPossibleMoves;
+	private final int SEARCH_SPACE_LIMIT = 10;
 	private final int SEARCH_DEPTH_LIMIT = 9;
 	
 	private boolean factInit;
 	private double[] factorials;
 	
+	private static double count;
 	private QubicBoard qboard;
 	private Player aiPlayer = Player.COMPUTER;
 	private QubicAI backupAI;
-
+	private long startTime;
+	private double remaining;
+	private double completed;
+	private double prev_completed;
 		
 	//private Move root;
 	
@@ -35,6 +38,8 @@ public class ExpertAI implements QubicAI {
 	}
 	
 	public Square go() {
+		startTime = System.currentTimeMillis();
+		count = 0;
 		QubicBoard tBoard = (QubicBoard)qboard.clone();
 		List<Square> openGrid = computeOpenGrid(tBoard.getGrid());
 		
@@ -157,8 +162,6 @@ public class ExpertAI implements QubicAI {
 		}
 	}
 	
-	
-	
 	private PriorityQueue<Possibility> computePossibilities(List<Square> openGrid, Player player) {
 		RowState thisPlayer;
 		RowState otherPlayer;
@@ -204,7 +207,7 @@ public class ExpertAI implements QubicAI {
 		
 		PriorityQueue<Possibility> sortedQueue = new PriorityQueue<Possibility>();
 		
-		for (int i = 0; i < SEARCH_WIDTH_LIMIT && !moves.isEmpty(); i++) {
+		for (int i = 0; i < SEARCH_SPACE_LIMIT && !moves.isEmpty(); i++) {
 			sortedQueue.add(moves.poll());
 		}
 		return sortedQueue;
@@ -236,8 +239,8 @@ public class ExpertAI implements QubicAI {
 				double result = 1.;
 				for (int i = k; i <= j; i++) {
 					int x = i;
-					if (x > SEARCH_WIDTH_LIMIT)
-						x = SEARCH_WIDTH_LIMIT;
+					if (x > SEARCH_SPACE_LIMIT)
+						x = SEARCH_SPACE_LIMIT;
 					result = x*result;
 				}
 				factorials[k - 1] = result;

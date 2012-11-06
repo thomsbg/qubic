@@ -21,7 +21,7 @@ import model.QubicBoard;
  * they are implemented (i.e. menu, toolbar, etc.)
  * @author Blake
  */
-class ActionController extends AiController {
+class ActionController extends SimpleController {
 	private NewGameAction newGameAction;
 	private OpenAction openAction;
 	private SaveAction saveAction;	
@@ -223,8 +223,6 @@ class ActionController extends AiController {
 					handleNewGame();
 				setEnabled(getBoard().canUndo());
 				saveAction.setEnabled(getBoard().canUndo());
-				System.out.println(getBoard());
-				System.out.println("-----------------------------------------");
 			}
 		}
 	}

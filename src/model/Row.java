@@ -133,18 +133,6 @@ public class Row implements Serializable {
 		return Collections.unmodifiableList(selectedSquares);
 	}
 	
-	public List<Square> getUnselectedSquares() {
-		List<Square> result = new ArrayList<Square>(squares); 
-		for (Square s : selectedSquares) {
-			if (!result.remove(s)) {
-				System.out.println("Inconsistent Square: " + s);
-				System.out.println(squares);
-				System.out.println(selectedSquares);
-			}
-		}
-		return result;
-	}
-	
 	/**
 	 * This is only to be used by the board in clearing the board for
 	 * a new game.

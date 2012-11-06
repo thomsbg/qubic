@@ -18,7 +18,7 @@ import javax.swing.JPanel;
 import javax.swing.JRadioButton;
 import javax.swing.JTabbedPane;
 
-import ai.QubicAI;
+import model.QubicBoard;
 
 /**
  * Contains all the buttons and listeners for the preferences popup dialog.
@@ -29,11 +29,13 @@ public class OptionsDialog {
 	private JFrame frame;
 	private JTabbedPane tp;
 	private ActionController controller;
+	private QubicBoard board;
 	private static final long serialVersionUID = 1;
 	
 	public OptionsDialog(JFrame f, ActionController c) {
 		frame = f;
 		controller = c;
+		board = controller.getBoard();
 		dialog = new JDialog(frame, "Options", true);
 		tp = new JTabbedPane();
 		//dialog.setContentPane(tp);	
@@ -63,15 +65,15 @@ public class OptionsDialog {
 		//playerPanel.setLayout(new BoxLayout(playerPanel, BoxLayout.Y_AXIS));
 		
 		JPanel p1 = new JPanel(new GridLayout(1, 0));
-		p1.add(makeButtonGroup("First Player"));
-		p1.add(makeButtonGroup("Second Player"));
+		p1.add(makeButtonGroup("First Player", true));
+		p1.add(makeButtonGroup("Second Player", false));
 		playerPanel.add(p1);		
 		
 		return playerPanel;
 	}
 	
-	private JPanel makeButtonGroup(String name) {
-		JPanel p = new PlayerButtonGroup();
+	private JPanel makeButtonGroup(String name, boolean firstPlayer) {
+		JPanel p = new PlayerButtonGroup(firstPlayer);
 		//p.setPreferredSize(new Dimension(100, 0));
 		p.setBorder(BorderFactory.createTitledBorder(name));
 		p.setLayout(new BoxLayout(p, BoxLayout.Y_AXIS));		
@@ -79,47 +81,63 @@ public class OptionsDialog {
 	}
 	
 	private class PlayerButtonGroup extends JPanel  implements ActionListener {
-		ButtonGroup group;
+		private ButtonGroup group;
+		private boolean first;
+		private static final long serialVersionUID = 1;
 		
-		public PlayerButtonGroup() {
+		public PlayerButtonGroup(boolean firstPlayer) {
 			super();
+			first = firstPlayer;
 			group = new ButtonGroup();
 			
-			JRadioButton hum = new JRadioButton("Human", true);
-			JRadioButton comp1 = new JRadioButton("Computer: Simple");
-			JRadioButton comp2 = new JRadioButton("Computer: Easy");
-			JRadioButton comp3 = new JRadioButton("Computer: Hard");
-			JRadioButton comp4 = new JRadioButton("Computer: Expert");
-			hum.addActionListener(this);
-			comp1.addActionListener(this);
-			comp2.addActionListener(this);
-			comp3.addActionListener(this);
-			comp4.addActionListener(this);
-			group.add(hum);
-			group.add(comp1);
-			group.add(comp2);
-			group.add(comp3);
-			group.add(comp4);
-			add(hum);
-			add(comp1);
-			add(comp2);
-			add(comp3);
-			add(comp4);
+			JRadioButton hBut = createRadioButton("Human", true);
+			JRadioButton c1But = createRadioButton("Computer: Simple", false);
+			JRadioButton c2But = createRadioButton("Computer: Easy", false);
+			JRadioButton c3But = createRadioButton("Computer: Hard", false);
+			JRadioButton c4But = createRadioButton("Computer: Expert", false);
+			
+			if (first) {
+				if (board.getFirstPlayer() == QubicBoard.Player.HUMAN)
+					hBut.setSelected(true);
+				else {
+					String aiName = board.getFirstAI().toString();
+					if (aiName.equals("Simple"))
+						c1But.setSelected(true);
+					else if (aiName.equals("Easy"))
+						c2But.setSelected(true);
+					else if (aiName.equals("Hard"))
+						c3But.setSelected(true);
+					else if (aiName.equals("Expert"))
+						c4But.setSelected(true);
+				}
+			}
+		}
+		
+		private JRadioButton createRadioButton(String name, boolean selected) {
+			JRadioButton button = new JRadioButton(name, selected);
+			button.addActionListener(this);
+			group.add(button);
+			add(button);
+			return button;
 		}
 		
 		public void actionPerformed(ActionEvent e) {
 			String player = e.getActionCommand();
-			if (player.startsWith("Computer"))
+			if (player.startsWith("Computer")) {
 				player = player.substring(10);
-			if (player.equals("Simple"))
-				controller.setCurrentAi(controller.getSimpleAi());
-			else if (player.equals("Easy"))
-				controller.setCurrentAi(controller.getEasyAi());
-			else if (player.equals("Hard"))
-				controller.setCurrentAi(controller.getHardAi());
-			else if (player.equals("Expert"))
-				controller.setCurrentAi(controller.getEasyAi());
-			controller.updateSelectedAiRadioButton();
+				if (first) {
+					board.setFirstPlayer(QubicBoard.Player.COMPUTER);
+					board.setFirstAI(player);
+				} else {
+					board.setSecondPlayer(QubicBoard.Player.COMPUTER);
+					board.setSecondAI(player);
+				}
+			} else {
+				if (first)
+					board.setFirstPlayer(QubicBoard.Player.HUMAN);
+				else
+					board.setSecondPlayer(QubicBoard.Player.HUMAN);
+			}				
 		}
 	}
 	

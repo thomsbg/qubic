@@ -41,13 +41,12 @@ class ViewController extends InputController {
 		progressBar = new JProgressBar(0, 100);
 		progressBar.setOrientation(JProgressBar.VERTICAL);
 		
-		JPanel p = new JPanel(new BorderLayout());
-		p.add(getViewPanel());
-		p.add(progressBar, BorderLayout.WEST);
+		JPanel p1 = new JPanel(new BorderLayout());
+		p1.add(progressBar, BorderLayout.WEST);
 		
 		view3D = new View3D(getBoard());
 		getBoard().addListener(view3D);
-		getViewPanel().add(view3D);
+		p1.add(view3D);
 		view3D.setPreferredSize(new Dimension(350, 400));		
 		view3D.addMouseListener(new MouseAdapter() {
 			public void mouseClicked(MouseEvent e) {
@@ -75,7 +74,8 @@ class ViewController extends InputController {
 		mainView = new View(getBoard());
 		getBoard().addListener(mainView);
 		p2.add(mainView, BorderLayout.SOUTH);
-		mainView.setPreferredSize(new Dimension(260, 75));
+		getViewPanel().add(p2);
+		mainView.setPreferredSize(new Dimension(0, 94));
 		mainView.addMouseListener(new MouseAdapter() {
 			public void mouseClicked(MouseEvent e) {
 				Square s = mainView.getSquareAtPoint(e.getPoint());
@@ -86,11 +86,12 @@ class ViewController extends InputController {
 		mainView.addMouseMotionListener(new MouseMotionAdapter() {
 			public void mouseMoved(MouseEvent e) {
 				Square s = mainView.getSquareAtPoint(e.getPoint());
+//				System.out.println(s);
 				mainView.highlightSquare(s);
 			}
 		});
 		
-		JSplitPane split = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT, p, p2);
+		JSplitPane split = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT, p1, getViewPanel());
 		split.setContinuousLayout(true);
 		split.setResizeWeight(1.0);
 		getFrame().add(split);

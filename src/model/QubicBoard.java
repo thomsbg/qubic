@@ -11,6 +11,11 @@ import java.util.Stack;
 
 import model.Row.RowState;
 import view.BoardListener;
+import ai.EasyAI;
+import ai.ExpertAI;
+import ai.HardAI;
+import ai.QubicAI;
+import ai.SimpleAI;
 
 /**
  * This is the model for the Qubic game.  It constructs two lists for data storage.
@@ -24,22 +29,27 @@ public class QubicBoard implements Cloneable, Serializable {
 	private ArrayList<Row> rows;
 	private ArrayList<Square> squares;
 	private ArrayList<BoardListener> listeners;
+	private ArrayList<QubicAI> ais;
+	private QubicAI currentFirstAI;
+	private QubicAI currentSecondAI;
 	private Stack<Square> undoStack;
 	private boolean gameOver;
 	private boolean catsGame;
-	public Player currentPlayer;
+	private Player currentPlayer;
 	private Player firstPlayer;
+	private Player secondPlayer;
+	private Square lastMove;
+	
 	private static final long serialVersionUID = 1;
 	
 	/**
 	 * An enumerator for who's turn it is, HUMAN, or COMPUTER. 
 	 * @author John Thomson
-	 *
 	 */
 	public enum Player {
 		HUMAN, COMPUTER;
 		//public Object clone() { return super.clone();}
-	};	
+	};
 	
 	/**
 	 * Constructs a new QubicBoard with the specified arguments.
@@ -47,12 +57,21 @@ public class QubicBoard implements Cloneable, Serializable {
 	 * @param allRows Scanner input to the dat file containing the rows information
 	 * @param allSquares Scanner input to the dat file containing the rows information
 	 */
-	public QubicBoard(Player initialPlayer, Scanner allRows, Scanner allSquares) {
-		currentPlayer = initialPlayer;
-		firstPlayer = initialPlayer;
+	public QubicBoard(Player first, Player second, Scanner allRows, Scanner allSquares) {
+		firstPlayer = first;
+		secondPlayer = second;
+		currentPlayer = firstPlayer;
+		
 		rows = new ArrayList<Row>();
 		squares = new ArrayList<Square>();
 		listeners = new ArrayList<BoardListener>();
+		ais = new ArrayList<QubicAI>();
+		addAI(new SimpleAI(this));
+		addAI(new EasyAI(this));
+		addAI(new HardAI(this));
+		addAI(new ExpertAI(this));
+		setFirstAI("Hard");
+		setSecondAI("Hard");
 		undoStack = new Stack<Square>();
 		gameOver = false;
 		catsGame = false;
@@ -113,16 +132,31 @@ public class QubicBoard implements Cloneable, Serializable {
 		return Collections.unmodifiableList(squares);
 	}
 	
-	public List<Row> getRows() {
-		return Collections.unmodifiableList(rows);
+	private void addAI(QubicAI ai) {
+		if (!ais.contains(ai))
+			ais.add(ai);
 	}
 	
-	/**
-	 * Returns the current player, useful for determining who's turn it is.
-	 * @return currentPlayer
-	 */
-	public Player getCurrentPlayer() {
-		return currentPlayer;
+	public QubicAI getFirstAI() {
+		return currentFirstAI;
+	}
+	
+	public void setFirstAI(String name) {
+		for (QubicAI ai: ais) {
+			if (name.equals(ai.toString()))
+				currentFirstAI = ai;
+		}
+	}
+	
+	public QubicAI getSecondAI() {
+		return currentSecondAI;
+	}
+	
+	public void setSecondAI(String name) {
+		for (QubicAI ai: ais) {
+			if (name.equals(ai.toString()))
+				currentSecondAI = ai;
+		}
 	}
 	
 	public Player getFirstPlayer() {
@@ -131,6 +165,18 @@ public class QubicBoard implements Cloneable, Serializable {
 	
 	public void setFirstPlayer(Player p) {
 		firstPlayer = p;
+	}
+	
+	public Player getSecondPlayer() {
+		return secondPlayer;
+	}
+	
+	public void setSecondPlayer(Player p) {
+		secondPlayer = p;
+	}
+	
+	public Player getCurrentPlayer() {
+		return currentPlayer;
 	}
 	
 	/**
@@ -147,8 +193,10 @@ public class QubicBoard implements Cloneable, Serializable {
 			System.out.println("The square you gave me doesn't exist on the board!!!");
 			//throw new IllegalArgumentException();
 			return false;
-		} else if (squares.get(index).getState() == null)
+		} else if (squares.get(index).getState() == null) {
 			squares.get(index).setState(currentPlayer);
+			lastMove = squares.get(index);
+		}
 		else
 			return false;
 		changePlayer();
@@ -181,9 +229,9 @@ public class QubicBoard implements Cloneable, Serializable {
 	/**
 	 * Alerts all listeners to the fact that the state of the board has
 	 * been changed and supplies them with the address to update themselves.
-	 *
 	 */
 	private void stateChanged() {
+		//TODO: Impliment Cat's Game determination.
 		int count = 0;
 		for (Row r : rows) {
 			if (r.getNumSelected() == 4 && r.getState() != Row.RowState.MIXED) {
@@ -204,13 +252,12 @@ public class QubicBoard implements Cloneable, Serializable {
 	
 	/**
 	 * Internal function that sets it so the next player now gets a turn.
-	 *
 	 */
 	private void changePlayer() {
-		if (currentPlayer == Player.HUMAN)
-			currentPlayer = Player.COMPUTER;
+		if (currentPlayer == firstPlayer)
+			currentPlayer = secondPlayer;
 		else
-			currentPlayer = Player.HUMAN;
+			currentPlayer = firstPlayer;
 	}
 	
 	/**
@@ -224,9 +271,9 @@ public class QubicBoard implements Cloneable, Serializable {
 				for (int k = 1; k <= 4; k++) {
 					Square sqr = new Square(i, k, j);
 					Square s = squares.get(squares.indexOf(sqr));
-					if (s.getState() == Player.HUMAN)
+					if (s.getState() == firstPlayer)
 						output += "O ";
-					else if (s.getState() == Player.COMPUTER)
+					else if (s.getState() == secondPlayer)
 						output += "X ";
 					else
 						output += "_ ";
@@ -244,7 +291,6 @@ public class QubicBoard implements Cloneable, Serializable {
 	 *
 	 */
 	public void resetBoard() {
-		System.out.println("Resetting Board..");
 		for (Row r: rows)
 			r.clear();
 		for (Square s : squares)
@@ -298,6 +344,10 @@ public class QubicBoard implements Cloneable, Serializable {
 			throw new RuntimeException(e);
 		}
 		return clone;
+	}
+	
+	public Square getLastMove() {
+		return lastMove;
 	}
 	
 	public boolean catsGame() {

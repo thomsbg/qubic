@@ -19,7 +19,7 @@ public class QubicMain {
 			System.out.println("File not found");
 			throw new RuntimeException(e);
 		}
-		QubicBoard q = new QubicBoard(QubicBoard.Player.COMPUTER, input, input2);
+		QubicBoard q = new QubicBoard(QubicBoard.Player.COMPUTER, QubicBoard.Player.HUMAN, input, input2);
 		
 		GameController c = new GameController(q);
 		c.start();

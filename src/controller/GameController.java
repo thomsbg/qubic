@@ -1,10 +1,10 @@
 package controller;
 
-import java.beans.PropertyChangeEvent;
-import java.beans.PropertyChangeListener;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
 
 import javax.swing.JOptionPane;
-import javax.swing.SwingWorker;
+import javax.swing.Timer;
 
 import model.QubicBoard;
 import model.Square;
@@ -17,7 +17,6 @@ import model.Square;
  * @author Blake
  */
 public final class GameController extends ViewController {	
-	private Task task;
 	private boolean clickOkay;
 	
 	/**
@@ -36,13 +35,10 @@ public final class GameController extends ViewController {
 	public void start() {
 		getFrame().setVisible(true);
 		if (getBoard().getFirstPlayer() == QubicBoard.Player.COMPUTER) {
-			clickOkay = false;
-			task = new Task();
-			task.addPropertyChangeListener(new ProgressBarListener());
-			task.execute();
+			computerMove(getBoard().getFirstAI().go());
 		}
 	}
-	
+		
 	/**
 	 * Where most of the gameplay happens. It checks to see if it is okay to click, 
 	 * then moves the human to the Square s (given as a parameter). If the human
@@ -53,18 +49,48 @@ public final class GameController extends ViewController {
 	void handleMoves(Square s) {
 		if (!clickOkay)
 			return;
+		handleMove(s);
 		clickOkay = false;
+		if (getBoard().getCurrentPlayer() == getBoard().getFirstPlayer()) {
+			if (getBoard().getFirstPlayer() == QubicBoard.Player.COMPUTER) {
+				Square s2 = getBoard().getFirstAI().go();
+				computerMove(s2);
+			} else
+				clickOkay = true;
+		} else {
+			if (getBoard().getSecondPlayer() == QubicBoard.Player.COMPUTER) {
+				Square s2 = getBoard().getSecondAI().go();
+				computerMove(s2);
+			} else
+				clickOkay = true;
+		}
+	}
+	
+	void handleMove(Square s) {
 		getUndoAction().setEnabled(false);
 		boolean success = getBoard().select(s);		
 		if (success) {
-			getHistoryPanel().humanMoves(s);
-			if (!handleGameOver()) {
-				task = new Task();
-				task.addPropertyChangeListener(new ProgressBarListener());
-				task.execute();
+			getHistoryPanel().writeLine();
+			getUndoAction().setEnabled(true);
+			getSaveAction().setEnabled(true);
+		}
+		clickOkay = !handleGameOver();
+	}
+	
+	void computerMove(Square s) {
+		final Square sFinal = s;
+		getProgressBar().setValue(0);
+		final Timer t = new Timer(100, null);
+		t.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent e) {
+				getProgressBar().setValue(getProgressBar().getValue() + 10);
+				if (getProgressBar().getValue() == 100) {
+					t.stop();
+					handleMove(sFinal);
+				}
 			}
-		} else
-			clickOkay = true;	
+		});
+		t.start();
 	}
 	
 	/**
@@ -83,10 +109,10 @@ public final class GameController extends ViewController {
 				message = "It's a cat's game!";
 			else {
 				message = "The game is over... ";
-				if (getBoard().getCurrentPlayer() == QubicBoard.Player.COMPUTER)
+				if (getBoard().getLastMove().getState() == QubicBoard.Player.HUMAN)
 					message += "and you won! I can't believe it...";
 				else
-					message += "and you lost. Sorry about that mate.";
+					message += "and the computer won!";
 			}
 			int result = JOptionPane.showConfirmDialog(getFrame(),
 					message + "\nDo you want to play again?",
@@ -107,8 +133,6 @@ public final class GameController extends ViewController {
 	void handleNewGame() {
 		getBoard().resetBoard();
 		getHistoryPanel().clearHistory();
-		System.out.println(getBoard());
-		System.out.println("-----------------------------------------");
 		start();
 	}
 	
@@ -119,7 +143,8 @@ public final class GameController extends ViewController {
 	 */
 	@Override
 	void handleUndo() {
-		getHistoryPanel().undoMove();
+		getHistoryPanel().removeLine();
+		clickOkay = true;
 	}
 	
 	/**
@@ -132,61 +157,5 @@ public final class GameController extends ViewController {
 		getBoard().addListener(getMainView());
 		getBoard().addListener(get3DView());
 		getBoard().addListener(getHistoryPanel());
-	}
-	
-	/**
-	 * A class implementing the PropertyChangeListener interface to be used with
-	 * the "Task" object also defined in GameController. These two classes together
-	 * provide the progress bar functionality, showing how much time left the computer
-	 * has to think.
-	 */
-	class ProgressBarListener implements PropertyChangeListener {
-		public void propertyChange(PropertyChangeEvent evt) {
-			if ("progress" == evt.getPropertyName()) {
-	            int progress = (Integer) evt.getNewValue();
-	            getProgressBar().setValue(progress);
-			}
-		}
-	}
-	
-	/**
-	 * The Task class defines a thread to run in the background, waiting 2
-	 * seconds before the computer moves. It updates its progress every 20 ms, 
-	 * thereby allowing the ProgressBarListener to follow it, and display how
-	 * a meter showing how much time is left to wait before the computer plays.
-	 */
-	class Task extends SwingWorker<Void, Void> {
-		public Void doInBackground() {
-			int progress = 100;
-            setProgress(100);
-            while (progress > 0) {
-                try {
-                    Thread.sleep(20);
-                } catch (InterruptedException ignore) {
-                	throw new RuntimeException(ignore.toString());
-                }
-                progress -= 1;
-                setProgress(Math.max(progress, 0));
-            }
-            return null;
-		}
-		
-		public void done() {
-			handleComputerMove();
-		}
-	}
-	
-	/**
-	 * A private method called by the inner class "Task". It asks the currentAi
-	 * object for its next move, and then moves there. It also updates the history panel
-	 * status, and toggles the visibility of various buttons/menu items.
-	 */
-	void handleComputerMove() {
-		Square s = getCurrentAi().go();
-		getBoard().select(s);
-		getHistoryPanel().computerMoves(s);
-		getUndoAction().setEnabled(true);
-		getSaveAction().setEnabled(true);
-		clickOkay = !handleGameOver();
 	}
 }

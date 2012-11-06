@@ -8,7 +8,6 @@ import javax.swing.JScrollPane;
 import javax.swing.JTextArea;
 
 import model.QubicBoard;
-import model.Square;
 
 public class MoveHistoryPanel extends JPanel implements BoardListener {
 	JTextArea area;
@@ -21,7 +20,7 @@ public class MoveHistoryPanel extends JPanel implements BoardListener {
 		area = new JTextArea();
 		pane = new JScrollPane(area);
 		pane.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_ALWAYS);
-		pane.setMinimumSize(new Dimension(260, 0));
+		pane.setMinimumSize(new Dimension(350, 0));
 		area.setEditable(false);
 		add(pane);
 	}
@@ -30,7 +29,7 @@ public class MoveHistoryPanel extends JPanel implements BoardListener {
 		board = b;
 	}
 	
-	public void humanMoves(Square s) {
+	/*public void humanMoves(Square s) {
 		area.append("Human moved to square:\t" + s + "\n");
 		area.setCaretPosition(area.getDocument().getLength());
 		repaint();
@@ -40,9 +39,24 @@ public class MoveHistoryPanel extends JPanel implements BoardListener {
 		area.append("Computer moved to square:\t" + s + "\n");
 		area.setCaretPosition(area.getDocument().getLength());
 		repaint();
+	}*/
+	
+	public void writeLine() {
+		String player;
+		if (board.getCurrentPlayer() == board.getFirstPlayer())
+			player = "Player 2 ";
+		else
+			player = "Player 1 ";
+		if (board.getLastMove().getState() == QubicBoard.Player.COMPUTER)
+			player += "(Computer)";
+		else
+			player += "(Human)";
+		area.append(player + " moved to square:\t" + board.getLastMove() + "\n");
+		area.setCaretPosition(area.getDocument().getLength());
+		repaint();
 	}
 	
-	public void undoMove() {
+	public void removeLine() {
 		String[] s = area.getText().split("\n");
 		String result = "";
 		for (int i = 0; i < s.length - 1; i++) {
